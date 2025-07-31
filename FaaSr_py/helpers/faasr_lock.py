@@ -29,7 +29,7 @@ def faasr_rsm(faasr_payload):
     flag_content = random.randint(1, 2**31 - 1)
     invocation_folder = get_invocation_folder(faasr_payload)
     flag_path = invocation_folder / Path(faasr_payload['FunctionInvoke']) / "flag"
-    flag_name = flag_path + str(flag_content)
+    flag_name = flag_path / str(flag_content)
     lock_name = invocation_folder / Path(faasr_payload['FunctionInvoke']) / "lock"
 
     # set s3 client
@@ -44,7 +44,7 @@ def faasr_rsm(faasr_payload):
     while True:
         # Put an object with the name log/functionname/flag/{random_intger} into the S3 bucket
         try:
-            s3_client.put_object(Key=flag_name, Bucket=target_s3["Bucket"])
+            s3_client.put_object(Key=str(flag_name), Bucket=target_s3["Bucket"])
         except Exception as e:
             err_msg = f"failed to upload flag to S3 -- MESSAGE: {e}"
             logger.exception(err_msg, stack_info=True)
