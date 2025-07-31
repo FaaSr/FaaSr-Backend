@@ -158,7 +158,8 @@ def anyone_else_interested(boto3_client, target_s3, flag_path, flag_name):
 
     pool = [x["Key"] for x in check_pool["Contents"]]
     # If our flag is in S3 and is the only one, return false
-    if flag_name in pool and len(pool) == 1:
+    if str(flag_name) in pool and len(pool) == 1:
         return False
     else:
+        print(pool)
         return True
