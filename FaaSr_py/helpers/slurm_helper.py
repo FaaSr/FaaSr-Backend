@@ -87,6 +87,7 @@ def create_job_script(faasr, original_function,actionname, environment_vars):
         f"#SBATCH --job-name={actionname}",
         f"#SBATCH --output={actionname}-%j.out",
         f"#SBATCH --error={actionname}-%j.err",
+        "#SBATCH --exclusive",
         "",
         f'echo "Starting FaaSr job: {actionname}"',
         'echo "Job ID: $SLURM_JOB_ID"',
