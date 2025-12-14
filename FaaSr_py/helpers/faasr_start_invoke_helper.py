@@ -54,22 +54,38 @@ def faasr_get_github(faasr_source, path, token=None):
         path: username/repo/path to file
         token: GitHub PAT
     """
-    # ensure path has two parts [username/repo]
     parts = path.split("/")
-    if len(parts) < 2:
-        err_msg = "github path should contain at least two parts"
-        logger.error(err_msg)
-        sys.exit(1)
 
-    # construct gh url
-    username = parts[0]
-    reponame = parts[1]
-    repo = f"{username}/{reponame}"
+    # split full path
+    if path.startswith("https://github.com"):
+        if len(parts) < 7:
+            err_msg = "invalid github url (check GitHub url for function)"
 
-    if len(parts) > 2:
-        path = "/".join(parts[2:])
+        username = parts[3]
+        reponame = parts[4]
+
+        if len(parts) > 7:
+            path = "/".join(parts[7:])
+        else:
+            path = None
     else:
-        path = None
+        # split partial path
+        # ensure path has two parts [username/repo]
+        if len(parts) < 2:
+            err_msg = "github path should contain at least two parts"
+            logger.error(err_msg)
+            sys.exit(1)
+
+        # construct gh url
+        username = parts[0]
+        reponame = parts[1]
+
+        if len(parts) > 2:
+            path = "/".join(parts[2:])
+        else:
+            path = None
+
+    repo = f"{username}/{reponame}"
 
     url = f"https://api.github.com/repos/{repo}/tarball"
     tar_name = f"/tmp/{reponame}.tar.gz"
@@ -137,17 +153,30 @@ def faasr_get_github_raw(token, path):
     Returns:
         Raw GitHub file (UTF-8 string)
     """
-    parts = path.split("/")
-    if len(parts) < 3:
-        err_msg = "github path should contain at least three parts"
-        logger.error(err_msg)
-        sys.exit(1)
+    # split full url
+    if path.startswith("https://github.com"):
+        parts = path.split("/")
 
-    # construct gh url
-    username = parts[0]
-    reponame = parts[1]
-    branch = parts[2]
-    filepath = "/".join(parts[3:])
+        if len(parts) < 7 or parts[5] != "blob":
+            err_msg = "invalid github url (check GitHub url for function)"
+
+        username = parts[3]
+        reponame = parts[4]
+        branch = parts[6]
+        filepath = "/".join(parts[7:])
+    else:
+        # split owner/repo/path
+        parts = path.split("/")
+        if len(parts) < 3:
+            err_msg = "github path should contain at least three parts"
+            logger.error(err_msg)
+            sys.exit(1)
+
+        username = parts[0]
+        reponame = parts[1]
+        branch = parts[2]
+        filepath = "/".join(parts[3:])
+
     url = f"https://api.github.com/repos/" f"{username}/{reponame}/contents/{filepath}"
     headers = {
         "Accept": "application/vnd.github.v3+json",
@@ -174,36 +203,34 @@ def faasr_get_github_raw(token, path):
         sys.exit(1)
 
 
-def faasr_install_git_repos(faasr_source, func_type, gits, token):
+def faasr_install_git_repos(faasr_source, gits, token):
     """
     Downloads content from git repo(s)
 
     Arguments:
         faasr_source: faasr payload (FaaSr)
-        func_type: Python or R
         gits: paths repos or files to download
         token: GitHub PAT
     """
     if isinstance(gits, str):
-        gits = [gits]
+        gits = {gits}
     if not gits:
         logger.info("No git repo dependency")
     else:
         # download content from each path
         for path in gits:
             # if path is a repo, clone the repo
-            if path.endswith("git") or path.startswith("https://"):
+            if path.startswith("https://github.com") and len(path.split("/")) == 5:
                 logger.info(f"Cloning GitHub repo: {path}")
                 faasr_get_github_clone(faasr_source, path)
             else:
                 # if path is a python file, download
                 file_name = os.path.basename(path)
-                if (file_name.endswith(".py") and func_type == "Python") or (
-                    file_name.endswith(".R") and func_type == "R"
+                if (file_name.lower().endswith(".py") or file_name.lower().endswith(".r")
                 ):
                     logger.info(f"Get file: {file_name}")
                     content = faasr_get_github_raw(token, path)
-                    target_dir = "/tmp/functions"
+                    target_dir = f"/tmp/functions/{faasr_source['InvocationID']}"
                     if not os.path.exists(target_dir):
                         os.makedirs(target_dir, exist_ok=True)
                     # write fetched file to disk
@@ -372,7 +399,7 @@ def faasr_func_dependancy_install(faasr_source, action):
 
         if remote_gits:
             # get gh functions
-            faasr_install_git_repos(faasr_source, func_type, remote_gits, token)
+            faasr_install_git_repos(faasr_source, remote_gits, token)
         else:
             # copy local files to /tmp/functions/{InvocationID}
             copy_local_files(faasr_source, local_gits)
