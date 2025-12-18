@@ -345,6 +345,15 @@ class Scheduler:
             "OVERWRITTEN": overwritten_fields,
             "PAYLOAD_URL": self.faasr.url,
         }
+
+        gh_pat = os.getenv("GH_PAT")
+        if gh_pat:
+            print("GH_PAT is present")
+            payload_dict["GH_PAT"] = gh_pat
+
+        print("payload dict")
+        print(payload_dict)
+        
         # Create body for POST
         json_payload = json.dumps(payload_dict)
 
@@ -459,6 +468,10 @@ class Scheduler:
             "PAYLOAD_URL": self.faasr.url,  # URL to GitHub-hosted workflow JSON
             "OVERWRITTEN": json.dumps(overwritten_fields, separators=(",", ":")),
         }
+
+        gh_pat = os.getenv("GH_PAT")
+        if gh_pat:
+            environment_vars["GH_PAT"] = gh_pat
 
         # Create job script
         job_script = create_job_script(self.faasr, original_function, function,environment_vars)

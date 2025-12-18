@@ -373,8 +373,7 @@
               "then": {
                 "required": [
                   "Endpoint",
-                  "Namespace",
-                  "API.key"
+                  "Namespace"
                 ]
               }
             },
