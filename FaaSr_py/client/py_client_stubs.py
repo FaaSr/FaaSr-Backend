@@ -222,8 +222,8 @@ def faasr_return(return_value=None):
         sys.exit(1)
 
 
-def faasr_exit(message=None, error=True):
-    exit_json = {"Error": error, "Message": message}
+def faasr_exit(message=None, error=True, traceback=None):
+    exit_json = {"Error": error, "Message": message, "Traceback": traceback}
     r = requests.post("http://127.0.0.1:8000/faasr-exit", json=exit_json)
     try:
         response = r.json()

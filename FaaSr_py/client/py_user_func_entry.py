@@ -66,6 +66,9 @@ def run_py_function(faasr, func_name, args, func_path=None):
         else:
             result = user_function(**args)
     except Exception as e:
-        faasr_exit(message=str(e))
+        import traceback
+
+        traceback = traceback.format_exc()
+        faasr_exit(message=str(e), traceback=traceback)
 
     faasr_return(result)

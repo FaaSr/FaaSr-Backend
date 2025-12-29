@@ -285,6 +285,8 @@ class Executor:
             else:
                 err_msg = "Unkown error while getting user function return"
             logger.error(err_msg, stack_info=True)
+            if return_val.get("Traceback"):
+                logger.error(f"Traceback: {return_val['Traceback']}")
             raise RuntimeError(err_msg)
 
         return return_val["FunctionResult"]

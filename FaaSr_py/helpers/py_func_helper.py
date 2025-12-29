@@ -96,6 +96,10 @@ def faasr_import_function_walk(func_name, directory="."):
                         if name == func_name and callable(obj):
                             return obj
 
+                except ImportError as e:
+                    # Safely skip import errors when walking through files that the current function
+                    # may not depend on. Still log a warning for debugging purposes.
+                    logger.warning(f"Skipping {f} due to import error: {e}")
                 except Exception as e:
                     logger.error(
                         f"Python file {f} has following source error: {str(e)}"

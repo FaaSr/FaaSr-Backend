@@ -217,10 +217,11 @@ faasr_return <- function(return_value=NULL) {
 }
 
 
-faasr_exit <- function(message=NULL, error=TRUE) {
+faasr_exit <- function(message=NULL, error=TRUE, traceback=NULL) {
     exit_json <- list(
         Error = error,
-        Message = message
+        Message = message,
+        Traceback = traceback
     )
     r <- POST("http://127.0.0.1:8000/faasr-exit", body=exit_json, encode="json")
     response_content <- content(r)

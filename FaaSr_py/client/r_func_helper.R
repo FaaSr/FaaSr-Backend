@@ -27,12 +27,14 @@ faasr_run_user_function <- function(func_name, user_args){
   
   # Use do.call to use user_function with arguments
   # try do.call and if there's an error, return error message and stop the function
-  faasr_result <- tryCatch(expr=do.call(user_function, user_args), error=function(e){
+  faasr_result <- withCallingHandlers(expr=do.call(user_function, user_args), error=function(e){
     nat_err_msg <- paste0('\"faasr_user_function\":Errors in the user function - ', as.character(e))
     err_msg <- paste0('{\"faasr_user_function\":\"Errors in the user function, ', func_name, ', check the log for the detail\"}', "\n")
+    trace <- paste(capture.output(sys.calls()), collapse="\n")
     faasr_log(nat_err_msg)
+    faasr_log(trace)
     message(err_msg)
-    faasr_exit()
+    faasr_exit(traceback=trace)
     }
   )
 
