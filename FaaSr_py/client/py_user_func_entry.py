@@ -11,6 +11,7 @@ from FaaSr_py.client.py_client_stubs import (
     faasr_put_file,
     faasr_rank,
     faasr_return,
+    faasr_secret,
 )
 from FaaSr_py.config.debug_config import global_config
 from FaaSr_py.helpers.py_func_helper import (
@@ -58,6 +59,7 @@ def run_py_function(faasr, func_name, args, func_path=None):
     user_function.__globals__["faasr_log"] = faasr_log
     user_function.__globals__["faasr_rank"] = faasr_rank
     user_function.__globals__["faasr_get_s3_creds"] = faasr_get_s3_creds
+    user_function.__globals__["faasr_secret"] = faasr_secret
 
     try:
         if global_config.USE_LOCAL_USER_FUNC:
