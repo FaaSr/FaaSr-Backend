@@ -124,6 +124,29 @@ faasr_get_s3_creds <- function(server_name = "") {
 }
 
 
+faasr_secret <- function(secret_name) {
+    if (is.null(secret_name) || secret_name == "") {
+        err_msg <- "faasr_secret: secret_name cannot be empty or NULL"
+        faasr_exit(error=TRUE, message=err_msg)
+        quit(status = 1, save = "no")
+    }
+    request_json <- list(
+        "ProcedureID" = "faasr_secret",
+        "Arguments" = list("secret_name" = secret_name)
+    )
+    r <- POST("http://127.0.0.1:8000/faasr-action", body = request_json, encode = "json")
+    response_content <- content(r)
+
+    if (!is.null(response_content$Success) && response_content$Success) {
+        return (response_content$Data$secret_value)
+    } else {
+        err_msg <- "Failed to get secret from server"
+        faasr_exit(error=TRUE, message=err_msg)
+        quit(status = 1, save = "no")
+    }
+}
+
+
 faasr_invocation_id <- function() {
     request_json <- list(
         "ProcedureID" = "faasr_invocation_id",
