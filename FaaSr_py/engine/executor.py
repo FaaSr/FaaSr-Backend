@@ -205,10 +205,6 @@ class Executor:
         logger.debug("Starting dependency install")
         action = self.faasr["ActionList"][action_name]
         faasr_func_dependancy_install(self.faasr, action)
-        # install dependencies for function
-        logger.debug("Starting dependency install")
-        action = self.faasr["ActionList"][action_name]
-        faasr_func_dependancy_install(self.faasr, action)
         logger.debug("Finished installing dependencies")
 
         # Run function
