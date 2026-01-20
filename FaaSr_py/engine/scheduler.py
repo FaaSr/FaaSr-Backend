@@ -348,11 +348,7 @@ class Scheduler:
 
         gh_pat = os.getenv("GH_PAT")
         if gh_pat:
-            print("GH_PAT is present")
             payload_dict["GH_PAT"] = gh_pat
-
-        print("payload dict")
-        print(payload_dict)
         
         # Create body for POST
         json_payload = json.dumps(payload_dict)
