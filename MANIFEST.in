@@ -1,4 +1,4 @@
 include FaaSr_py/config/config.json
 include FaaSr_py/FaaSr.schema.json
 include requirements.txt
-recursive-include FaaSr_py *.R
+recursive-include FaaSr_py *.R *.jl
