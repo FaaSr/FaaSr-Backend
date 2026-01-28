@@ -21,3 +21,5 @@ wheels/
 .installed.cfg
 *.egg
 FaaSr_py/config/config.json
+.vscode/
+.notes.md

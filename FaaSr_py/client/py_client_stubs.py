@@ -178,6 +178,44 @@ def faasr_get_s3_creds():
         sys.exit(1)
 
 
+def faasr_secret(secret_name: str) -> str:
+    """
+    Get a secret from the compute server's secret store
+
+    Arguments:
+        secret_name: str -- name of the secret to retrieve
+
+    Returns:
+        str -- the secret value
+    """
+    if not secret_name:
+        err_msg = "{py_client_stub: ERROR -- faasr_secret called with empty secret_name}"
+        print(err_msg)
+        sys.exit(1)
+
+    request_json = {
+        "ProcedureID": "faasr_secret",
+        "Arguments": {"secret_name": secret_name},
+    }
+
+    r = requests.post("http://127.0.0.1:8000/faasr-action", json=request_json)
+
+    try:
+        response = r.json()
+        if response.get("Success", False):
+            return response["Data"]["secret_value"]
+        else:
+            err_msg = '{"faasr_secret": "Request to FaaSr RPC failed"}'
+            print(err_msg)
+            sys.exit(1)
+    except Exception as e:
+        err_msg = (
+            f'{{"faasr_secret": "Failed to parse response from FaaSr RPC -- {e}"}}'
+        )
+        print(err_msg)
+        sys.exit(1)
+
+
 def faasr_invocation_id():
     """
     Get the invocation ID of the current function

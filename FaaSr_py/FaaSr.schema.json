@@ -78,6 +78,13 @@
                 "R"
               ]
             },
+            "Secrets": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z_0-9]*$"
+              }
+            },
             "RequiresVM": {
           "type": "boolean",
           "description": "Whether this action requires VM resources",

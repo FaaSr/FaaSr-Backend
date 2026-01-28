@@ -17,6 +17,7 @@ from FaaSr_py.s3_api import (
     faasr_log,
     faasr_put_file,
 )
+from FaaSr_py.secrets_api import faasr_secret
 
 logger = logging.getLogger(__name__)
 faasr_api = FastAPI()
@@ -100,6 +101,10 @@ def register_request_handler(faasr_payload):
                     return_obj.Data = faasr_rank(faasr_payload=faasr_payload)
                 case "faasr_get_s3_creds":
                     return_obj.Data["s3_creds"] = faasr_get_s3_creds(
+                        faasr_payload=faasr_payload, **args
+                    )
+                case "faasr_secret":
+                    return_obj.Data["secret_value"] = faasr_secret(
                         faasr_payload=faasr_payload, **args
                     )
                 case _:
