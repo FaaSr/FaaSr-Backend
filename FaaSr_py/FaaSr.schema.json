@@ -646,6 +646,13 @@
       "description": "Optional boolean that determines if a user function is re-executed if the workflow has already been executed with the same InvocationID",
       "type": "boolean",
       "default": true
+    },
+    "Secrets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z_0-9]*$"
+      }
     }
   },
   "required": [
