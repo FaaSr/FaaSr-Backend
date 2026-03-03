@@ -75,7 +75,8 @@
               "type": "string",
               "enum": [
                 "Python",
-                "R"
+                "R",
+                "Julia"
               ]
             },
             "RequiresVM": {
@@ -564,6 +565,22 @@
     },
     "FunctionCRANPackage": {
       "description": "User CRAN packages",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "minLength": 1
+      },
+      "patternProperties": {
+        "": {
+          "type": [
+            "string",
+            "array"
+          ]
+        }
+      }
+    },
+    "JuliaPkgPackage": {
+      "description": "User Pkg packages",
       "type": "object",
       "minProperties": 1,
       "propertyNames": {

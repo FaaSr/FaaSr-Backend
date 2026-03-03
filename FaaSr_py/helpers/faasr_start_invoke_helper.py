@@ -286,6 +286,34 @@ def faasr_install_cran(package, lib_path=None):
     else:
         logger.info(f"Successfully installed {package}")
 
+def faasr_install_pkg(package):
+    """
+    Installs a single Pkg package non-interactively
+    """
+    if not package:
+        logger.info("No Pkg package dependency")
+        return
+
+    logger.info(f"Installing Pkg package: {package}")
+
+    command = [
+        "julia",
+        "-e",
+        f'using Pkg; Pkg.add(["{package}"]) '
+    ]
+
+    result = subprocess.run(command, text=True, capture_output=True)
+
+    if result.returncode != 0:
+        logger.error(
+            f"Failed to install {package}:\n"
+            f"std err: {result.stderr}\n"
+            f"std out: {result.stdout}"
+        )
+        raise RuntimeError(f"Install failed for {package}")
+    else:
+        logger.info(f"Successfully installed {package}")
+
 
 def faasr_pip_gh_install(path):
     """
@@ -424,6 +452,15 @@ def faasr_func_dependancy_install(faasr_source, action):
 
         logger.debug(f"Packages in /tmp/Rlibs: {os.listdir('/tmp/Rlibs')}")
 
+    elif "JuliaPkgPackage" in faasr_source and func_type == "Julia":
+        if "JuliaPkgPackage" in faasr_source:
+            pkg_packages = faasr_source["JuliaPkgPackage"].get(func_name)
+
+        if pkg_packages:
+            for package in pkg_packages:
+                faasr_install_pkg(package)
+
+        logger.debug(f"Packages in /opt/julia_depot/packages: {os.listdir('/opt/julia_depot/packages')}")
     # install gh packages
     if "FunctionGitHubPackage" in faasr_source:
         if func_name in faasr_source["FunctionGitHubPackage"]:
