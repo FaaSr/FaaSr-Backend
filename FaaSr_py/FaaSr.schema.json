@@ -218,7 +218,8 @@
                 "GitHubActions",
                 "Lambda",
                 "GoogleCloud",
-                "SLURM"
+                "SLURM",
+                "Kubernetes"
               ]
             },
             "Region": {
@@ -429,6 +430,23 @@
                   "UserName",
                   "APIVersion",
                   "Partition"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "FaaSType": {
+                    "const": "Kubernetes"
+                  }
+                },
+                "required": [
+                  "FaaSType"
+                ]
+              },
+              "then": {
+                "required": [
+                  "Endpoint"
                 ]
               }
             }

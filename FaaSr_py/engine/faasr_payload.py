@@ -134,6 +134,8 @@ class FaaSrPayload:
             GCP_SecretKey
         SLURM
             SLURM_Token
+        Kubernetes
+            K8s_Token
         GH
             GH_PAT
         Minio
@@ -178,6 +180,10 @@ class FaaSrPayload:
                 case "OpenWhisk":
                     api_key = _get(f"{name}_APIkey")
                     self._base_workflow["ComputeServers"][name]["APIkey"] = api_key
+
+                case "Kubernetes":
+                    token = _get(f"{name}_Token")
+                    self._base_workflow["ComputeServers"][name]["Token"] = token
 
                 case _:
                     logger.warning(f"Unknown FaaSType for {name}: {faas_type}")

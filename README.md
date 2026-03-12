@@ -35,6 +35,11 @@ faasr/gcp-r:latest (R)
 faasr/slurm-python:latest (Python)
 faasr/slurm-r:latest (R)
 ```
+### Kubernetes
+```
+faasr/kubernets-python:dev (Python)
+faasr/kubernetes-r:dev (R)
+```
 ### AWS Lambda
 ```
 Email cutlern [at] oregonstate.edu or build your own
