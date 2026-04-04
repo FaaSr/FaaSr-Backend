@@ -114,7 +114,7 @@ class Scheduler:
                             next_compute_server, function, workflow_name
                         )
                     case "Kubernetes":
-                        self.invoke_kubernetes(next_compute_server, function, workflow_name)
+                        self.invoke_kubernetes(next_server, next_compute_server, function, workflow_name)
 
             else:
                 msg = f"SIMULATED TRIGGER: {function}"
@@ -665,7 +665,7 @@ class Scheduler:
             sys.exit(1)
 
 
-    def invoke_kubernetes(self, next_compute_server, function, workflow_name=None):
+    def invoke_kubernetes(self, next_server, next_compute_server, function, workflow_name=None):
         """
         Deploy the next job to a Kubernetes cluster
         
@@ -676,7 +676,8 @@ class Scheduler:
 
         from FaaSr_py.helpers.kubernetes_helper import (
             make_kubernetes_request,
-            validate_jwt_token
+            validate_jwt_token,
+            validate_certificate
         )
 
         original_function = function
@@ -689,6 +690,7 @@ class Scheduler:
         server_info = next_compute_server
         endpoint = server_info["Endpoint"]
         namespace = server_info.get("Namespace", "default")
+        certificate = server_info.get("SSLCertificate") #This is default behavior, but the certificate is completely optional
 
         #Ensure endpoint is formatted correctly
         if not endpoint.startswith("http"):
@@ -713,8 +715,16 @@ class Scheduler:
         # Create overwritten fields for next action
         overwritten_fields = self.faasr.overwritten.copy()
 
+        if (certificate != None):
+            (isValid, hasChanged, certificate) = validate_certificate(certificate)
+            # If the register workflow was run, this is already valid, but to check
+            if (not isValid):
+                sys.exit(1)
+            elif (hasChanged):
+                overwritten_fields["ComputeServers"][next_server]["SSLCertificate"] = certificate
+
         if next_compute_server.get("UseSecretStore"):
-            if "ComputerServers" in overwritten_fields:
+            if "ComputeServers" in overwritten_fields:
                 del overwritten_fields["ComputeServers"]
             if "DataStores" in overwritten_fields:
                 del overwritten_fields["DataStores"]
@@ -777,7 +787,8 @@ class Scheduler:
                 method="POST",
                 headers=None,
                 body=job_payload,
-                token=token
+                token=token,
+                certificate=certificate
             )
 
             if response.status_code in [200, 201, 202]:

@@ -49,7 +49,7 @@ def validate_jwt_token(token):
     
 
 def make_kubernetes_request(
-    endpoint, method="GET", headers=None, body=None, token=None, username=None
+    endpoint, method="GET", headers=None, body=None, token=None, certificate=None, username=None
 ):
     """
     Helper function to send HTTPS requests to the Kubernetes REST API
@@ -87,15 +87,47 @@ def make_kubernetes_request(
     if (method.upper() == "POST"):
         headers["Content-Type"] = "application/json"
 
+    # If the certificate is specified, include it
+
+    request_session = requests.Session()
+    
+    if (certificate):
+        request_session.verify = certificate
+
     if (method.upper() == "GET"):
-        response = requests.get(url=endpoint, headers=headers, timeout=30)
+        response = request_session.get(url=endpoint, headers=headers, timeout=30)
     elif (method.upper() == "POST"):
-        response = requests.post(url=endpoint, headers=headers, json=body, timeout=30, verify=False)
+        response = request_session.post(url=endpoint, headers=headers, json=body, timeout=30)
     elif (method.upper() == "PUT"):
-        response = requests.put(url=endpoint, headers=headers, json=body, timeout=30)
+        response = request_session.put(url=endpoint, headers=headers, json=body, timeout=30)
     elif (method.upper() == "DELETE"):
-        response = requests.delete(url=endpoint, headers=headers, timeout=30)
+        response = request_session.delete(url=endpoint, headers=headers, timeout=30)
     else:
         raise ValueError(f"Unsupported HTTP method: {method}")
     
     return response
+
+
+
+def validate_certificate(certificate):
+    """
+    Test that the certificate is in the correct format, and if it is base64 encoded, decode it to the proper format 
+
+    Args:
+        certificate: The string representing the certificate from the workflow
+
+    Returns:
+        bool: Determines whether the operation was successful or not
+        bool: Determines whether the certificate should be updated in the FaaSrPayload. Ideally, if the certificate is b64 encoded, it is only decoded once, and then just used by every subsequent call
+        string: The validated, or decoded certificate
+    """
+
+    if ("-----BEGIN CERTIFICATE-----" in certificate and "-----END CERTIFICATE-----" in certificate):
+        return (True, False, certificate)
+
+    else:
+        certificate = base64.b64decode(certificate).decode('utf-8')
+        if (certificate and "-----BEGIN CERTIFICATE-----" in certificate and "-----END CERTIFICATE-----" in certificate):
+           return (True, True, certificate)
+
+    return (False, False, None) 
