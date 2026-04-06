@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from datetime import datetime
+import os
 
 import requests
 
@@ -61,6 +62,7 @@ def make_kubernetes_request(
         body: dict -- request body (optional)
         token: str -- JWT token from server configuration
         username: str -- username from server configuration
+        certificate: str -- The certificate data of the authority certificate needed to perform the SSL handshake
     Returns:
         requests.Response: HTTP response
     """
@@ -92,7 +94,12 @@ def make_kubernetes_request(
     request_session = requests.Session()
     
     if (certificate):
-        request_session.verify = certificate
+        with open("./temp.pem", "w") as certFile:
+            certFile.write(certificate)
+        
+        request_session.verify = "./temp.pem"
+
+    logger.info(f"This is the verification information: {request_session.verify}")
 
     if (method.upper() == "GET"):
         response = request_session.get(url=endpoint, headers=headers, timeout=30)
@@ -103,8 +110,13 @@ def make_kubernetes_request(
     elif (method.upper() == "DELETE"):
         response = request_session.delete(url=endpoint, headers=headers, timeout=30)
     else:
+        if (certificate):
+            os.remove("./temp.pem")
         raise ValueError(f"Unsupported HTTP method: {method}")
-    
+
+    if (certificate):
+        os.remove("./temp.pem")
+
     return response
 
 
