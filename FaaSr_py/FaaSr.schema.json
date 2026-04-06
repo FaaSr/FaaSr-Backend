@@ -336,6 +336,18 @@
               "type": "number",
               "minimum": 1,
               "description": "Maximum storage for server-level default in MB"
+            },
+            "CPULimit": {
+              "type": "string",
+              "description": "The maximum amount of CPU usage allowed for a specific container on the Kubernetes cluster, specified in millicores"
+            },
+            "MemoryLimit": {
+              "type": "string",
+              "description": "The maximum amount of memory usage allowed for a specific container on the Kubernetes cluster, specified in memory units (ie. GiB, MiB, GB, MB, etc.)"
+            },
+            "SSLCertificate": {
+              "type": "string",
+              "description": "The SSL certificate specified to authorize a domain with the SSL authority certificate"
             }
           },
           "additionalProperties": false,

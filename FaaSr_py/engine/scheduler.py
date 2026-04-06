@@ -691,6 +691,23 @@ class Scheduler:
         endpoint = server_info["Endpoint"]
         namespace = server_info.get("Namespace", "default")
         certificate = server_info.get("SSLCertificate") #This is default behavior, but the certificate is completely optional
+        memoryLimit = server_info.get("MemoryLimit")
+        cpuLimit = server_info.get("CPULimit")
+
+        resourceObject = {}
+
+        if (memoryLimit and cpuLimit):
+            resourceObject = {
+                    "requests": {
+                        "memory": f"{memoryLimit}",
+                        "cpu": f"{cpuLimit}"
+                    },
+                    "limits": {
+                        "memory": f"{memoryLimit}",
+                        "cpu": f"{cpuLimit}"
+                    }
+                }
+
 
         #Ensure endpoint is formatted correctly
         if not endpoint.startswith("http"):
@@ -766,7 +783,8 @@ class Scheduler:
                             {
                                 "name": f"{function}",
                                 "image": f"{container}",
-                                "env": environment_vars
+                                "env": environment_vars,
+                                "resources": resourceObject
                             }
                         ],
                         "restartPolicy": "Never"
