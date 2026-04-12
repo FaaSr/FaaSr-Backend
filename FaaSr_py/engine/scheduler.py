@@ -738,7 +738,10 @@ class Scheduler:
             if (not isValid):
                 sys.exit(1)
             elif (hasChanged):
-                overwritten_fields["ComputeServers"][next_server]["SSLCertificate"] = certificate
+                if "ComputeServers" in overwritten_fields:
+                    overwritten_fields["ComputeServers"][next_server]["SSLCertificate"] = certificate
+                else:
+                    overwritten_fields["ComputeServers"] = {f"{next_server}": {"SSLCertificate": f"{certificate}"}}
 
         if next_compute_server.get("UseSecretStore"):
             if "ComputeServers" in overwritten_fields:
