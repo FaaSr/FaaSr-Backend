@@ -35,12 +35,32 @@ def validate_jwt_token(token):
         if padding != 4:
             payload += "=" * padding
         
-        # Decode base64
-        decoded_bytes = base64.b64decode(payload)
-        decoded_json = decoded_bytes.decode("utf-8")
-        payload_data = json.loads(decoded_json)
 
-        if (not payload_data.get("iss") or payload_data["iss"] != "kubernetes/serviceaccount" or not payload_data.get("kubernetes.io/serviceaccount/namespace") or not payload_data.get("kubernetes.io/serviceaccount/secret.name")):
+        try:
+            decoded_bytes = base64.b64decode(payload)
+            decoded_json = decoded_bytes.decode("utf-8")
+            payload_data = json.loads(decoded_json)
+        except (ValueError, UnicodeDecodeError) as e:
+            return {"valid": False, "error": f"Unable to decode and parse the JWT token: {e}"}
+
+        # This is the new service account format
+        if (payload_data.get("exp") and payload_data.get("kubernetes.io") and payload_data.get("iat")):
+            if (payload_data.get("exp") < int(time.time())):
+                return {"valid": False, "error": f"The temporary JWT token is expired!\n"}
+            elif (payload_data.get("iat") > int(time.time())):
+                return {"valid": False, "error": f"The JWT is malformed!\n"}
+            else:
+                kubernetes_info = payload_data["kubernetes.io"]
+
+                if (not kubernetes_info.get("namespace") or not kubernetes_info.get("serviceaccount")):
+                    return {"valid": False, "error": f"The Kubernetes section of the JWT is malformed!\n"}
+
+        # Both tokens must have an issuer - if its not included, assume this is not valid token
+        elif (payload_data.get("iss") and payload_data.get("kubernetes.io/serviceaccount/namespace") and payload_data.get("kubernetes.io/serviceaccount/secret.name")):
+            if (payload_data["iss"] != "kubernetes/serviceaccount"):
+                return {"valid": False, "error": f"The service account is incorrectly configured!\n"}
+              
+        else:
             return {"valid": False, "error": "Invalid Kubernetes secret format"}
         
         return {"valid": True, "error": None}
