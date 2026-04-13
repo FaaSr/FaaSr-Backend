@@ -708,11 +708,11 @@ class Scheduler:
         if (memoryLimit and cpuLimit):
             resourceObject = {
                     "requests": {
-                        "memory": f"{memoryLimit}MB",
+                        "memory": f"{memoryLimit}M",
                         "cpu": f"{cpuLimit}m"
                     },
                     "limits": {
-                        "memory": f"{memoryLimit}MB",
+                        "memory": f"{memoryLimit}M",
                         "cpu": f"{cpuLimit}m"
                     }
                 }
