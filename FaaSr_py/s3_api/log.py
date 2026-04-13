@@ -75,6 +75,8 @@ def faasr_log(faasr_payload, log_message):
         with open(log_download_path, "a") as f:
             f.write(logs)
 
+        logger.info(f"This is the payload, just to confirm it exists: {faasr_payload}")
+
         # Upload log back to S3
         try:
             with open(log_download_path, "rb") as log_data:
