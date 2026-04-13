@@ -690,21 +690,30 @@ class Scheduler:
         server_info = next_compute_server
         endpoint = server_info["Endpoint"]
         namespace = server_info.get("Namespace", "default")
-        certificate = server_info.get("SSLCertificate") #This is default behavior, but the certificate is completely optional
-        memoryLimit = server_info.get("MemoryLimit")
-        cpuLimit = server_info.get("CPULimit")
+        memoryLimit = server_info.get("MaxMemory")
+        cpuLimit = server_info.get("MaxCPU")
+        activeDeadlineSeconds = server_info.get("TimeLimit")
+        additionalTTL = server_info.get("AdditionalTimeToLive")
+        numberOfRetries = server_info.get("NumberOfRetries")
+
+        allowSelfSignedCertificate = server_info.get("AllowSelfSignedCertificate")
+
+        certificate = None
+
+        if (allowSelfSignedCertificate):
+            certificate = server_info.get("SSLCertificate") #This is default behavior, but the certificate is completely optional
 
         resourceObject = {}
 
         if (memoryLimit and cpuLimit):
             resourceObject = {
                     "requests": {
-                        "memory": f"{memoryLimit}",
-                        "cpu": f"{cpuLimit}"
+                        "memory": f"{memoryLimit}MB",
+                        "cpu": f"{cpuLimit}m"
                     },
                     "limits": {
-                        "memory": f"{memoryLimit}",
-                        "cpu": f"{cpuLimit}"
+                        "memory": f"{memoryLimit}MB",
+                        "cpu": f"{cpuLimit}m"
                     }
                 }
 
@@ -779,7 +788,7 @@ class Scheduler:
                 "name": f"{function}"
             },
             "spec": {
-                "activeDeadlineSeconds": 300,
+                "activeDeadlineSeconds": activeDeadlineSeconds,
                 "template": {
                     "spec": {
                         "containers": [
@@ -793,8 +802,8 @@ class Scheduler:
                         "restartPolicy": "Never"
                     }
                 },
-                "backoffLimit": 4,
-                "ttlSecondsAfterFinished": 10
+                "backoffLimit": numberOfRetries,
+                "ttlSecondsAfterFinished": additionalTTL
             }
         }
 
