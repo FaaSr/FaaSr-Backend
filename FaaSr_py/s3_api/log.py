@@ -75,6 +75,7 @@ def faasr_log(faasr_payload, log_message):
         with open(log_download_path, "a") as f:
             f.write(logs)
 
+        logger.info(f"This is the info: {faasr_payload["DataStores"]}")
 
         # Upload log back to S3
         try:
