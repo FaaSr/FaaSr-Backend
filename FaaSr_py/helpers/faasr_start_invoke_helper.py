@@ -426,6 +426,7 @@ def faasr_func_dependancy_install(faasr_source, action):
         logger.debug(f"Packages in /tmp/Rlibs: {os.listdir('/tmp/Rlibs')}")
 
     elif "JuliaPkgPackage" in faasr_source and func_type == "Julia":
+        lib_path = "/tmp/julia_depot"
         if "JuliaPkgPackage" in faasr_source:
             pkg_packages = faasr_source["JuliaPkgPackage"].get(func_name)
 
@@ -433,7 +434,8 @@ def faasr_func_dependancy_install(faasr_source, action):
             for package in pkg_packages:
                 faasr_install_pkg(package)
 
-        logger.debug(f"Packages in /opt/julia_depot/packages: {os.listdir('/opt/julia_depot/packages')}")
+        pkg_list = os.listdir(f'{lib_path}/packages')
+        logger.debug(f"Packages in {lib_path}/packages: {pkg_list}")
     # install gh packages
     if "FunctionGitHubPackage" in faasr_source:
         if func_name in faasr_source["FunctionGitHubPackage"]:
