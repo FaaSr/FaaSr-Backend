@@ -773,6 +773,10 @@ class Scheduler:
             {"name": "OVERWRITTEN", "value": json.dumps(overwritten_fields, separators=(",", ":"))}
         ]
 
+        gh_pat = os.getenv("GH_PAT")
+        if gh_pat:
+            environment_vars["GH_PAT"] = gh_pat
+
         action_containers = self.faasr.base_workflow["ActionContainers"]
         if not action_containers.get(original_function):
             logger.error(f"Unable to get a valid container associated with the function: {original_function}")
