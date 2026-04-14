@@ -218,7 +218,8 @@
                 "GitHubActions",
                 "Lambda",
                 "GoogleCloud",
-                "SLURM"
+                "SLURM",
+                "Kubernetes"
               ]
             },
             "Region": {
@@ -335,6 +336,23 @@
               "type": "number",
               "minimum": 1,
               "description": "Maximum storage for server-level default in MB"
+            },
+            "MaxCPU": {
+              "type": "number",
+              "minimum": 1,
+              "description": "The maximum amount of CPU usage allowed for a specific container on the Kubernetes cluster, specified in millicores"
+            },
+            "SSLCertificate": {
+              "type": "string",
+              "description": "The SSL certificate specified to authorize a domain with the SSL authority certificate"
+            },
+            "AdditionalTimeToLive": {
+              "type": "number",
+              "minimum": 1
+            },
+            "NumberOfRetries": {
+              "type": "number",
+              "minimum": 0
             }
           },
           "additionalProperties": false,
@@ -429,6 +447,23 @@
                   "UserName",
                   "APIVersion",
                   "Partition"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "FaaSType": {
+                    "const": "Kubernetes"
+                  }
+                },
+                "required": [
+                  "FaaSType"
+                ]
+              },
+              "then": {
+                "required": [
+                  "Endpoint"
                 ]
               }
             }
