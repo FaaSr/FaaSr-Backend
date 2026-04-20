@@ -787,7 +787,7 @@ class Scheduler:
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata": {
-                "name": f"{function}-{unique_data}"
+                "name": f"{function}-{unique_data[:8]}"
             },
             "spec": {
                 "activeDeadlineSeconds": activeDeadlineSeconds,
