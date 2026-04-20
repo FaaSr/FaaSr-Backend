@@ -782,7 +782,7 @@ class Scheduler:
         container = action_containers[original_function]
 
         # Create the job payload
-        unique_data = uuid.uuid4()
+        unique_data = f"{uuid.uuid4()}"
         job_payload = {
             "apiVersion": "batch/v1",
             "kind": "Job",
