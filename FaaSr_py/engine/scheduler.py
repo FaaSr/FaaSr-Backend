@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import sys
+import uuid
 
 import boto3
 import requests
@@ -781,11 +782,12 @@ class Scheduler:
         container = action_containers[original_function]
 
         # Create the job payload
+        unique_data = uuid.uuid4()
         job_payload = {
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata": {
-                "name": f"{function}"
+                "name": f"{function}-{unique_data}"
             },
             "spec": {
                 "activeDeadlineSeconds": activeDeadlineSeconds,
