@@ -697,11 +697,7 @@ class Scheduler:
         numberOfRetries = server_info.get("NumberOfRetries")
 
         allowSelfSignedCertificate = server_info.get("AllowSelfSignedCertificate")
-
-        certificate = None
-
-        if (allowSelfSignedCertificate):
-            certificate = server_info.get("SSLCertificate") #This is default behavior, but the certificate is completely optional
+        certificate = server_info.get("SSLCertificate")
 
         resourceObject = {}
 
@@ -822,7 +818,8 @@ class Scheduler:
                 headers=None,
                 body=job_payload,
                 token=token,
-                certificate=certificate
+                certificate=certificate,
+                selfSigned=allowSelfSignedCertificate
             )
 
             if response.status_code in [200, 201, 202]:

@@ -4,10 +4,24 @@ import logging
 import time
 from datetime import datetime
 import os
+import ssl
+from requests.adapters import HTTPAdapter
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+class LaxSSLAdapter(HTTPAdapter):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        # Pass the custom context to urllib3's PoolManager
+        ctx = ssl.create_default_context()
+        ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
+
+        pool_kwargs['ssl_context'] = ctx
+        return super().init_poolmanager(connections, maxsize, block, **pool_kwargs)
 
 def validate_jwt_token(token):
     """
@@ -70,7 +84,7 @@ def validate_jwt_token(token):
     
 
 def make_kubernetes_request(
-    endpoint, method="GET", headers=None, body=None, token=None, certificate=None, username=None
+    endpoint, method="GET", headers=None, body=None, token=None, certificate=None, selfSigned=False
 ):
     """
     Helper function to send HTTPS requests to the Kubernetes REST API
@@ -113,6 +127,10 @@ def make_kubernetes_request(
 
     request_session = requests.Session()
     
+    if (selfSigned):
+        adapter = LaxSSLAdapter()
+        request_session.mount("https://", adapter)
+
     if (certificate):
         with open("./temp.pem", "w") as certFile:
             certFile.write(certificate)
