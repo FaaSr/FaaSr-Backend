@@ -771,7 +771,7 @@ class Scheduler:
 
         gh_pat = os.getenv("GH_PAT")
         if gh_pat:
-            environment_vars += {"name": "GH_PAT", "value": gh_pat}
+            environment_vars.append({"name": "GH_PAT", "value": gh_pat})
 
         action_containers = self.faasr.base_workflow["ActionContainers"]
         if not action_containers.get(original_function):
