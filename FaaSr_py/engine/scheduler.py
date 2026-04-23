@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import sys
+import uuid
 
 import boto3
 import requests
@@ -113,6 +114,8 @@ class Scheduler:
                         self.invoke_googlecloud(
                             next_compute_server, function, workflow_name
                         )
+                    case "Kubernetes":
+                        self.invoke_kubernetes(next_server, next_compute_server, function, workflow_name)
 
             else:
                 msg = f"SIMULATED TRIGGER: {function}"
@@ -661,6 +664,208 @@ class Scheduler:
         except Exception as e:
             logger.exception(f"GoogleCloud: Request failed: {e}")
             sys.exit(1)
+
+
+    def invoke_kubernetes(self, next_server, next_compute_server, function, workflow_name=None):
+        """
+        Deploy the next job to a Kubernetes cluster
+        
+        Arguments:
+            next_compute_server: dict -- next compute server configuration
+            function: str -- name of the function to invoke
+        """
+
+        from FaaSr_py.helpers.kubernetes_helper import (
+            make_kubernetes_request,
+            validate_jwt_token,
+            validate_certificate
+        )
+
+        original_function = function
+
+        if workflow_name:
+            function = f"{workflow_name}-{function}"
+            logger.debug(f"Prepending workflow name. Full function: {function}")
+
+        # Get server configuration
+        server_info = next_compute_server
+        endpoint = server_info["Endpoint"]
+        namespace = server_info.get("Namespace", "default")
+        memoryLimit = server_info.get("MaxMemory")
+        cpuLimit = server_info.get("MaxCPU")
+        activeDeadlineSeconds = server_info.get("TimeLimit")
+        additionalTTL = server_info.get("AdditionalTimeToLive")
+        numberOfRetries = server_info.get("NumberOfRetries")
+
+        allowSelfSignedCertificate = server_info.get("AllowSelfSignedCertificate")
+        certificate = server_info.get("SSLCertificate")
+
+        resourceObject = {}
+
+        if (memoryLimit and cpuLimit):
+            resourceObject = {
+                    "requests": {
+                        "memory": f"{memoryLimit}M",
+                        "cpu": f"{cpuLimit}m"
+                    },
+                    "limits": {
+                        "memory": f"{memoryLimit}M",
+                        "cpu": f"{cpuLimit}m"
+                    }
+                }
+
+
+        #Ensure endpoint is formatted correctly
+        if not endpoint.startswith("http"):
+            endpoint = f"https://{endpoint}"
+        
+        token = server_info.get("Token")
+        if not token or token.strip() == "":
+            err_msg = f"K8s: No authentication token available for server {function}"
+            logger.error(err_msg)
+            sys.exit(1)
+
+        #Validate JWT token
+        token_validation = validate_jwt_token(token)
+        if not token_validation["valid"]:
+            err_msg = (
+                f"K8s: Token validation failed for {self.faasr['FunctionInvoke']} - "
+                f"{token_validation['error']}"
+            )
+            logger.error(err_msg)
+            sys.exit(1)
+
+        # Create overwritten fields for next action
+        overwritten_fields = self.faasr.overwritten.copy()
+
+        if (certificate != None):
+            (isValid, hasChanged, certificate) = validate_certificate(certificate)
+            # If the register workflow was run, this is already valid, but to check
+            if (not isValid):
+                sys.exit(1)
+            elif (hasChanged):
+                if "ComputeServers" in overwritten_fields:
+                    overwritten_fields["ComputeServers"][next_server]["SSLCertificate"] = certificate
+                else:
+                    overwritten_fields["ComputeServers"] = {f"{next_server}": {"SSLCertificate": f"{certificate}"}}
+
+        if next_compute_server.get("UseSecretStore"):
+            if "ComputeServers" in overwritten_fields:
+                del overwritten_fields["ComputeServers"]
+            if "DataStores" in overwritten_fields:
+                del overwritten_fields["DataStores"]
+            logger.info(
+                "Next Kubernetes action will use secret store. Secrets not included in payload"
+            )
+        else:
+            overwritten_fields["ComputeServers"] = self.faasr["ComputeServers"]
+            overwritten_fields["DataStores"] = self.faasr["DataStores"]
+            logger.info(
+                "Next Kubernetes action expects secrets in payload - including credentials"
+            )
+    
+        # Prepare environment variables
+        environment_vars = [
+            {"name": "PAYLOAD_URL", "value": self.faasr.url},
+            {"name": "OVERWRITTEN", "value": json.dumps(overwritten_fields, separators=(",", ":"))}
+        ]
+
+        gh_pat = os.getenv("GH_PAT")
+        if gh_pat:
+            environment_vars.append({"name": "GH_PAT", "value": gh_pat})
+
+        action_containers = self.faasr.base_workflow["ActionContainers"]
+        if not action_containers.get(original_function):
+            logger.error(f"Unable to get a valid container associated with the function: {original_function}")
+            sys.exit(1)
+        
+        container = action_containers[original_function]
+
+        # Create the job payload
+        job_payload = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "generateName": f"{function}-"
+            },
+            "spec": {
+                "activeDeadlineSeconds": activeDeadlineSeconds,
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": f"{function}",
+                                "image": f"{container}",
+                                "env": environment_vars,
+                                "resources": resourceObject
+                            }
+                        ],
+                        "restartPolicy": "Never"
+                    }
+                },
+                "backoffLimit": numberOfRetries,
+                "ttlSecondsAfterFinished": additionalTTL
+            }
+        }
+
+        submit_url = f"{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs"
+
+        logger.info(f"Kubernetes: submitting job to {submit_url}")
+ 
+        try:
+            response = make_kubernetes_request(
+                endpoint=submit_url,
+                method="POST",
+                headers=None,
+                body=job_payload,
+                token=token,
+                certificate=certificate,
+                selfSigned=allowSelfSignedCertificate
+            )
+
+            if response.status_code in [200, 201, 202]:
+                job_info = response.json()
+
+                uid = "Unknown"
+                creationTimestamp = 0
+
+                metadata = job_info["metadata"]
+
+                if (metadata.get("uid")):
+                    uid = metadata["uid"]
+
+                if (metadata.get("creationTimestamp")):
+                    creationTimestamp = metadata["creationTimestamp"]
+
+                succ_msg = (
+                    f"Kubernetes: Successfully submitted jobs: {self.faasr['FunctionInvoke']} "
+                    f"(Job ID: {uid})",
+                    f"(Created at: {creationTimestamp})"
+                )
+                logger.info(succ_msg)
+            else:
+                error_content = response.text
+                err_msg = (
+                    f"Kubernetes: Error submitting job: {self.faasr['FunctionInvoke']} - "
+                    f"HTTP {response.status_code}: {error_content}"
+                )
+                logger.error(err_msg)
+
+                if response.status_code == 401:
+                    logger.error(
+                        "Kubernetes: Authentication failed - check token validity and username"
+                    )
+                elif response.status_code == 403:
+                    logger.error(
+                        "Kubernetes: Authorization failed - check user permissions"
+                    )
+                
+                sys.exit(1)
+        
+        except Exception as e:
+            logger.exception(f"Kubernetes request failed: {e}")
+            sys.exit(1)
+
 
 
 def contains_dict(list_obj):
