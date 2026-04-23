@@ -782,12 +782,11 @@ class Scheduler:
         container = action_containers[original_function]
 
         # Create the job payload
-        unique_data = f"{uuid.uuid4()}"
         job_payload = {
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata": {
-                "name": f"{function}-{unique_data[:8]}"
+                "generateName": f"{function}-"
             },
             "spec": {
                 "activeDeadlineSeconds": activeDeadlineSeconds,
