@@ -700,8 +700,9 @@ class Scheduler:
         allowSelfSignedCertificate = server_info.get("AllowSelfSignedCertificate")
         certificate = server_info.get("SSLCertificate")
 
-        resourceObject = {}
+        invocationTimestamp = overwritten_fields["InvocationTimestamp"]
 
+        resourceObject = {}
         if (memoryLimit and cpuLimit):
             resourceObject = {
                     "requests": {
@@ -786,7 +787,10 @@ class Scheduler:
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata": {
-                "generateName": f"{function}-"
+                "generateName": f"{function}-",
+                "labels": {
+                    "InvocationTimestamp": invocationTimestamp
+                }
             },
             "spec": {
                 "activeDeadlineSeconds": activeDeadlineSeconds,
