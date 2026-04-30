@@ -700,8 +700,6 @@ class Scheduler:
         allowSelfSignedCertificate = server_info.get("AllowSelfSignedCertificate")
         certificate = server_info.get("SSLCertificate")
 
-        invocationTimestamp = overwritten_fields["InvocationTimestamp"]
-
         resourceObject = {}
         if (memoryLimit and cpuLimit):
             resourceObject = {
@@ -781,6 +779,7 @@ class Scheduler:
             sys.exit(1)
         
         container = action_containers[original_function]
+        invocationTimestamp = overwritten_fields["InvocationTimestamp"]
 
         # Create the job payload
         job_payload = {
