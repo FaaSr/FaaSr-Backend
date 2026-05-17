@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import ssl
 from requests.adapters import HTTPAdapter
+import uuid
 
 import requests
 
@@ -131,29 +132,31 @@ def make_kubernetes_request(
         adapter = LaxSSLAdapter()
         request_session.mount("https://", adapter)
 
+    temp_cert_identifier = uuid.uuid4()
+
     if (certificate):
-        with open("./temp.pem", "w") as certFile:
+        with open(f"./temp-{temp_cert_identifier}.pem", "w") as certFile:
             certFile.write(certificate)
         
-        request_session.verify = "./temp.pem"
+        request_session.verify = f"./temp-{temp_cert_identifier}.pem"
 
-    logger.info(f"This is the verification information: {request_session.verify}")
-
-    if (method.upper() == "GET"):
-        response = request_session.get(url=endpoint, headers=headers, timeout=30)
-    elif (method.upper() == "POST"):
-        response = request_session.post(url=endpoint, headers=headers, json=body, timeout=30)
-    elif (method.upper() == "PUT"):
-        response = request_session.put(url=endpoint, headers=headers, json=body, timeout=30)
-    elif (method.upper() == "DELETE"):
-        response = request_session.delete(url=endpoint, headers=headers, timeout=30)
-    else:
+    try:
+        if (method.upper() == "GET"):
+            response = request_session.get(url=endpoint, headers=headers, timeout=30)
+        elif (method.upper() == "POST"):
+            response = request_session.post(url=endpoint, headers=headers, json=body, timeout=30)
+        elif (method.upper() == "PUT"):
+            response = request_session.put(url=endpoint, headers=headers, json=body, timeout=30)
+        elif (method.upper() == "DELETE"):
+            response = request_session.delete(url=endpoint, headers=headers, timeout=30)
+        else:
+            raise ValueError(f"Unsupported HTTP method: {method}")        
+    finally:
         if (certificate):
-            os.remove("./temp.pem")
-        raise ValueError(f"Unsupported HTTP method: {method}")
-
-    if (certificate):
-        os.remove("./temp.pem")
+            try:
+                os.remove(f"./temp-{temp_cert_identifier}.pem")
+            except OSError:
+                pass
 
     return response
 

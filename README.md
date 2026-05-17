@@ -37,7 +37,7 @@ faasr/slurm-r:latest (R)
 ```
 ### Kubernetes
 ```
-faasr/kubernets-python:dev (Python)
+faasr/kubernetes-python:dev (Python)
 faasr/kubernetes-r:dev (R)
 ```
 ### AWS Lambda

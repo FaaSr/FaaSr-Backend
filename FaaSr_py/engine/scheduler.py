@@ -781,6 +781,33 @@ class Scheduler:
         container = action_containers[original_function]
         invocationTimestamp = overwritten_fields["InvocationTimestamp"]
 
+
+
+        specDictionary = {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": f"{function}",
+                            "image": f"{container}",
+                            "env": environment_vars,
+                        }
+                    ],
+                    "restartPolicy": "Never"
+                }
+            },
+            "backoffLimit": (numberOfRetries if numberOfRetries is not None else 6),
+        }
+
+        if (activeDeadlineSeconds is not None):
+            specDictionary["activeDeadlineSeconds"] = activeDeadlineSeconds
+        
+        if (additionalTTL is not None):
+            specDictionary["ttlSecondsAfterFinished"] = additionalTTL
+
+        if (resourceObject):
+            specDictionary["template"]["spec"]["containers"][0]["resources"] = resourceObject
+
         # Create the job payload
         job_payload = {
             "apiVersion": "batch/v1",
@@ -791,24 +818,7 @@ class Scheduler:
                     "InvocationTimestamp": invocationTimestamp
                 }
             },
-            "spec": {
-                "activeDeadlineSeconds": activeDeadlineSeconds,
-                "template": {
-                    "spec": {
-                        "containers": [
-                            {
-                                "name": f"{function}",
-                                "image": f"{container}",
-                                "env": environment_vars,
-                                "resources": resourceObject
-                            }
-                        ],
-                        "restartPolicy": "Never"
-                    }
-                },
-                "backoffLimit": numberOfRetries,
-                "ttlSecondsAfterFinished": additionalTTL
-            }
+            "spec": specDictionary
         }
 
         submit_url = f"{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs"
