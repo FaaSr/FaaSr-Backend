@@ -29,7 +29,7 @@ def faasr_get_s3_creds(faasr_payload, server_name=""):
     if not target_s3.get("Anonymous") or len(target_s3["Anonymous"]) == 0:
         anonymous = False
     else:
-        match (target_s3["Anonymous"].tolower()):
+        match (target_s3["Anonymous"].lower()):
             case "true":
                 anonymous = True
             case "false":
