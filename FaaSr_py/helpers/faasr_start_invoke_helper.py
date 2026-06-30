@@ -250,7 +250,7 @@ def faasr_pip_install(package):
     if not package:
         logger.info("No PyPI package dependency")
     else:
-        command = ["pip", "install", "--no-input", package]
+        command = ["pip", "install",  "--no-input", package, "-t", "/tmp/packages"]
         subprocess.run(command, text=True)
 
 

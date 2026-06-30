@@ -135,7 +135,7 @@ class Executor:
 
             if func_res != 0:
                 raise RuntimeError(
-                    f"non-zero exit code ({func_res!r}) from user function"
+                    f"non-zero exit code ({func_res!r}) from user function\nstdout: {func_stdout}"
                 )
         else:
             logger.info("SKIPPING USER FUNCTION")
