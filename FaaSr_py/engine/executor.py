@@ -96,6 +96,39 @@ class Executor:
                     logger.error(f"Error running R function: {e}")
                     sys.exit(1)
                 func_res = r_func.returncode
+            elif func_type == "Julia":
+                # path to Julia function handler
+                client_dir = Path(__file__).parent.parent / "client"
+
+                julia_files = [
+                    client_dir / "julia_user_func_entry.jl",
+                    client_dir / "julia_func_helper.jl",
+                    client_dir / "julia_client_stubs.jl",
+                ]
+
+                # Copy each file into the current working directory
+                for src in julia_files:
+                    dst = Path(src.name)
+                    shutil.copy(src, dst)
+
+                logger.info(f"Starting function: {func_name} (Julia)")
+
+                # run Julia entry as a subprocess
+                try:
+                    julia_func = subprocess.run(
+                        [
+                            "julia",
+                            "julia_user_func_entry.jl",
+                            func_name,
+                            json.dumps(user_args),
+                            self.faasr["InvocationID"],
+                        ], capture_output=True, text=True
+                    )
+                except Exception as e:
+                    logger.error(f"Error running Julia function: {julia_func.stdout} {julia_func.stderr}")
+                    sys.exit(1)
+                func_res = julia_func.returncode
+
             else:
                 logger.error(f"Unkown function type: {func_type}")
                 sys.exit(1)
