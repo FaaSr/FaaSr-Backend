@@ -335,10 +335,7 @@ def faasr_install_git_packages(gh_packages, type, lib_path=None):
             if type == "Python":
                 faasr_pip_gh_install(package)
             elif type == "R":
-                # Quote the lib path once. Previously lib_path was wrapped in
-                # quotes and then interpolated into new="{lib_path}", which
-                # produced invalid R: new=""/tmp/Rlibs"".
-                # Do not mutate lib_path across packages in this loop.
+
                 lib_arg = f'"{lib_path}"' if lib_path else ".libPaths()[1]"
                 # FaaSr Actions expose GH_PAT; remotes/devtools look for
                 # GITHUB_PAT / GITHUB_TOKEN and otherwise use a bundled PAT
