@@ -283,8 +283,24 @@ def faasr_install_cran(package, lib_path=None):
             f"std out: {result.stdout}"
         )
         raise RuntimeError(f"Install failed for {package}")
-    else:
-        logger.info(f"Successfully installed {package}")
+
+    # install.packages() often exits 0 even when a package is unavailable on
+    # CRAN (it prints a warning and continues). Verify the package actually
+    # landed in the target library before reporting success.
+    package_dir = os.path.join(lib_path, package)
+    if not os.path.isdir(package_dir):
+        logger.error(
+            f"CRAN install reported success but '{package}' was not found "
+            f"under {lib_path}. The package may be unavailable for this R "
+            f"version or not on CRAN.\n"
+            f"std err: {result.stderr}\n"
+            f"std out: {result.stdout}"
+        )
+        raise RuntimeError(
+            f"Install failed for {package}: package not found after install"
+        )
+
+    logger.info(f"Successfully installed {package}")
 
 
 def faasr_pip_gh_install(path):
@@ -319,23 +335,27 @@ def faasr_install_git_packages(gh_packages, type, lib_path=None):
             if type == "Python":
                 faasr_pip_gh_install(package)
             elif type == "R":
-                if lib_path:
-                    lib_path = f'"{lib_path}"'
-                else:
-                    lib_path = ".libPaths()[1]"
-                command = [
-                    "Rscript",
-                    "-e",
-                    (
-                        f"withr::with_libpaths("
-                        f'new="{lib_path}", '
-                        f'code=quote(devtools::install_github("{package}", force=TRUE)))'
-                    ),
-                ]
-                res = subprocess.run(command, text=True)
+                # Quote the lib path once. Previously lib_path was wrapped in
+                # quotes and then interpolated into new="{lib_path}", which
+                # produced invalid R: new=""/tmp/Rlibs"".
+                # Do not mutate lib_path across packages in this loop.
+                lib_arg = f'"{lib_path}"' if lib_path else ".libPaths()[1]"
+                # FaaSr Actions expose GH_PAT; remotes/devtools look for
+                # GITHUB_PAT / GITHUB_TOKEN and otherwise use a bundled PAT
+                # that can return HTTP 401. Prefer GH_PAT, then fall back.
+                r_expr = (
+                    'tok <- Sys.getenv("GH_PAT", unset=""); '
+                    'if (!nzchar(tok)) tok <- Sys.getenv("GITHUB_TOKEN", unset=""); '
+                    'if (!nzchar(tok)) tok <- Sys.getenv("GITHUB_PAT", unset=""); '
+                    f"withr::with_libpaths(new={lib_arg}, "
+                    f"code={{devtools::install_github("
+                    f'"{package}", force=TRUE, auth_token=tok)}})'
+                )
+                command = ["Rscript", "-e", r_expr]
+                res = subprocess.run(command, text=True, capture_output=True)
                 if res.returncode != 0:
-                    logger.info("STDOUT:", res.stdout)
-                    logger.info("STDERR:", res.stderr)
+                    logger.info("STDOUT: %s", res.stdout)
+                    logger.info("STDERR: %s", res.stderr)
                     raise RuntimeError(f"Installation failed for {package}")
 
 
