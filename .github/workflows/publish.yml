@@ -1,0 +1,56 @@
+name: Upload Python Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to publish, e.g. 2.1.0. A matching tag must already exist.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the tag refs are available to look up below.
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' is not a release version (expected X.Y.Z)."
+            exit 1
+          fi
+          if ! git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then
+            echo "::error::No tag '$VERSION' exists in this repository."
+            exit 1
+          fi
+          git checkout --detach "refs/tags/$VERSION"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build release distributions
+        env:
+          # setup.py reads this so the uploaded version matches the tag.
+          PACKAGE_VERSION: ${{ inputs.version }}
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          twine check dist/*
+          twine upload dist/*
